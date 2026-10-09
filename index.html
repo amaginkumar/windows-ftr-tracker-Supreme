@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#123b35"><link rel="manifest" href="./manifest.webmanifest"><title>Windows FTR Tracker</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#172b28;background:#f3f6f5;--green:#123b35;--line:#d7e1de;--muted:#637570}*{box-sizing:border-box}body{margin:0}header{background:var(--green);color:white;padding:20px 16px}header h1{font-size:22px;margin:0 0 5px}header p{margin:0;color:#d7e8e3;font-size:13px}.wrap{max-width:900px;margin:auto;padding:14px}.nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.nav button,.btn{border:1px solid var(--line);border-radius:10px;padding:11px 14px;background:white;color:#173b34;font-weight:700;cursor:pointer}.nav button.active,.btn.primary{background:var(--green);color:white;border-color:var(--green)}.card{background:white;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.stat{border:1px solid var(--line);border-radius:11px;padding:12px}.stat small{display:block;color:var(--muted)}.stat strong{display:block;font-size:25px;margin-top:5px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.field label{display:block;font-size:13px;font-weight:bold;margin-bottom:5px}.field input,.field select,.field textarea,input[type=file]{width:100%;padding:11px;border:1px solid #cbd8d4;border-radius:9px;background:white;font:inherit;min-height:43px}.field textarea{min-height:80px}.field{min-width:0}.full{grid-column:1/-1}.muted{color:var(--muted);font-size:13px;line-height:1.45}.record{border-bottom:1px solid var(--line);padding:12px 0;overflow-wrap:anywhere}.record:last-child{border:0}.tag{display:inline-block;border:1px solid var(--line);border-radius:20px;padding:4px 8px;font-size:12px;font-weight:bold}.hidden{display:none!important}video{width:100%;max-height:280px;background:#111;border-radius:10px}button:focus,input:focus,select:focus,textarea:focus{outline:2px solid #4e9485;outline-offset:1px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style></head>
+<body>
+<header><h1>Windows FTR Tracker</h1><p>First Time Right inspections · QR window identification · Issue tracking</p></header>
+<main class="wrap">
+<div class="nav"><button class="active" data-view="dashboard">Dashboard</button><button data-view="scan">Scan / Find Window</button><button data-view="inspection">New Inspection</button><button data-view="history">History & Export</button></div>
+<section id="dashboard">
+<div class="card"><h2>FTR Dashboard</h2><div class="stats"><div class="stat"><small>Inspections</small><strong id="total">0</strong></div><div class="stat"><small>FTR passed</small><strong id="passed">0</strong></div><div class="stat"><small>Non-FTR</small><strong id="failed">0</strong></div><div class="stat"><small>FTR rate</small><strong id="rate">0%</strong></div></div></div>
+<div class="card"><h3>Recent inspections</h3><div id="recent" class="muted">No records yet.</div></div>
+<div class="card"><h3>Quick start</h3><p class="muted">Start by finding a window using its QR code or manually enter its details in New Inspection. Records are saved on this device/browser.</p><button class="btn primary" data-go="scan">Find / scan a window</button></div>
+</section>
+<section id="scan" class="hidden">
+<div class="card"><h2>Scan or Find Window</h2><p class="muted">Camera QR scanning requires a supported browser and camera permission. If scanning is unavailable, enter the QR contents manually.</p>
+<div class="actions"><button id="startCamera" class="btn primary">Start QR camera</button><button id="stopCamera" class="btn">Stop camera</button></div><video id="video" class="hidden" playsinline></video><p id="cameraMsg" class="muted" aria-live="polite"></p>
+<div class="field"><label>QR text / Window ID</label><input id="qrText" placeholder="e.g. GRI-W-T4-501-001"></div><div class="actions"><button id="lookup" class="btn primary">Find window</button><button class="btn sample" data-id="GRI-W-T4-501-001">Load sample T4-501</button><button class="btn sample" data-id="GRI-W-T4-506-002">Load sample T4-506</button></div>
+<div id="lookupResult" class="muted" style="margin-top:12px">No window selected.</div><div class="actions"><button id="useWindow" class="btn primary" disabled>Use in inspection</button></div>
+</div></section>
+<section id="inspection" class="hidden"><form id="form" class="card"><h2>Window Inspection Record</h2><div class="grid">
+<div class="field"><label>Project *</label><input id="project" required placeholder="Project name"></div><div class="field"><label>Order No. *</label><input id="order" required placeholder="Order number"></div>
+<div class="field"><label>Tower / Flat</label><input id="flat" placeholder="T4-501"></div><div class="field"><label>Window ID / QR *</label><input id="windowId" required placeholder="Unique window ID"></div>
+<div class="field"><label>Window Type</label><select id="type"><option>Casement</option><option>Sliding</option><option>Fixed</option><option>Bay Window</option><option>Mesh Window</option><option>Door</option><option>Other</option></select></div><div class="field"><label>Window Size (mm)</label><input id="size" placeholder="Width × Height"></div>
+<div class="field full"><label>Full QR Code Details (saved to Excel)</label><textarea id="qrDetails" placeholder="Captured QR text / full encoded details"></textarea></div>
+<div class="field"><label>Inspection Date *</label><input id="date" type="date" required></div><div class="field"><label>Engineer / Inspector *</label><input id="engineer" required placeholder="Name"></div>
+<div class="field full"><label>Result *</label><select id="status"><option value="FTR">FTR — First Time Right</option><option value="Non-FTR">Non-FTR — Issue found</option></select></div>
+<div id="issueFields" class="full grid hidden"><div class="field"><label>Issue Category</label><select id="issue"><option>Hardware / Lock</option><option>Glass</option><option>Gasket</option><option>Profile / Bow</option><option>Size / Aperture</option><option>Mesh</option><option>Silicone</option><option>Fastener</option><option>Installation</option><option>Other</option></select></div><div class="field"><label>Responsibility</label><select id="responsibility"><option>Production</option><option>Survey</option><option>Dispatch</option><option>Installation</option><option>Site / Customer</option><option>Other</option></select></div><div class="field full"><label>Issue Description</label><textarea id="description" placeholder="What issue was found?"></textarea></div><div class="field full"><label>Root Cause</label><input id="rootCause" placeholder="Known / suspected cause"></div><div class="field full"><label>Corrective Action</label><textarea id="action" placeholder="Rectification needed or completed"></textarea></div></div>
+<div class="field full"><label>Photo Evidence (optional)</label><input id="photos" type="file" accept="image/*" capture="environment" multiple><div class="muted">This version records the number of selected photos; it does not upload them to a server.</div></div><div class="field full"><label>Remarks</label><textarea id="remarks" placeholder="Additional notes"></textarea></div></div><div class="actions"><button class="btn primary" type="submit">Save Inspection</button><button class="btn" type="button" id="resetForm">Clear Form</button></div><p id="formMsg" class="muted" aria-live="polite"></p></form></section>
+<section id="history" class="hidden"><div class="card"><h2>History & Export</h2><div class="field"><label>Search records</label><input id="search" placeholder="Project, order, flat, engineer, window ID"></div><div id="historyList"></div><div class="actions"><button id="exportExcel" class="btn primary">Download Excel (.xls)</button><button id="export" class="btn">Download CSV</button><button id="clearRecords" class="btn">Delete all records</button></div>
+<div class="card" style="margin-top:14px;background:#f8fbfa"><h3>Email Excel manually</h3><div class="field"><label>Recipient email address</label><input id="emailTo" type="email" placeholder="example@company.com"></div><div class="actions"><button id="emailExcel" class="btn primary">Download Excel & Open Email</button></div><p class="muted">This downloads the Excel file and opens your email app with the recipient and message filled in. For security, the app cannot attach files automatically: attach the downloaded Windows_FTR_Records.xls in your email before sending.</p></div>
+<p class="muted">Data is stored only in this browser on this device; it is not yet shared with other engineers or synced to a cloud database. Export and share backups regularly.</p></div></section>
+</main>
+<script>
+(()=>{const $=id=>document.getElementById(id);let records=[];try{records=JSON.parse(localStorage.getItem('windowsFTRRecordsV1')||'[]')}catch(e){}let selectedWindow=null,stream=null,scanTimer=null,lastQrRaw='';const sampleWindows={'GRI-W-T4-501-001':{project:'Dr Ram Prasad Estate',order:'THE-QT-00003602',flat:'T4-501',windowId:'GRI-W-T4-501-001',type:'Casement',size:'1200 × 1500'},'GRI-W-T4-506-002':{project:'Dr Ram Prasad Estate',order:'THE-QT-00003602',flat:'T4-506',windowId:'GRI-W-T4-506-002',type:'Sliding',size:'1500 × 1200'}};const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const today=()=>{let d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)};$('date').value=today();
+function show(view){document.querySelectorAll('main section').forEach(s=>s.classList.toggle('hidden',s.id!==view));document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));if(view==='history')renderHistory()}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.view)));document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
+function persist(){try{localStorage.setItem('windowsFTRRecordsV1',JSON.stringify(records))}catch(e){alert('Browser storage is full or unavailable. Please export CSV to keep your records.')}}function render(){let total=records.length,passed=records.filter(r=>r.status==='FTR').length;$('total').textContent=total;$('passed').textContent=passed;$('failed').textContent=total-passed;$('rate').textContent=total?Math.round(passed/total*100)+'%':'0%';$('recent').innerHTML=records.length?records.slice(-5).reverse().map(recordHtml).join(''):'No records yet.';renderHistory()}function recordHtml(r){return '<div class="record"><strong>'+esc(r.windowId)+'</strong> <span class="tag">'+esc(r.status)+'</span><div>'+esc(r.project)+' · '+esc(r.flat)+' · '+esc(r.type)+' · '+esc(r.size)+'</div><div class="muted">Order '+esc(r.order)+' · '+esc(r.date)+' · Engineer '+esc(r.engineer)+'</div>'+(r.status==='Non-FTR'?'<div class="muted">Issue: '+esc(r.issue)+' / '+esc(r.responsibility)+' — '+esc(r.description)+' | Action: '+esc(r.action)+'</div>':'')+'</div>'}function renderHistory(){let q=($('search')?.value||'').toLowerCase();let arr=records.filter(r=>Object.values(r).join(' ').toLowerCase().includes(q));$('historyList').innerHTML=arr.length?arr.slice().reverse().map(recordHtml).join(''):'<p class="muted">No matching records.</p>'} $('search').addEventListener('input',renderHistory);
+function normalizeQr(raw){
+  const id=String(raw??'').trim();
+  let obj=null;
+  try{const parsed=JSON.parse(id);if(parsed&&typeof parsed==='object')obj=parsed;}catch(e){}
+  if(!obj && id.includes('?')){
+    try{const u=new URL(id);obj=Object.fromEntries(u.searchParams.entries());}catch(e){}
+  }
+  if(!obj && /[:=]/.test(id) && /[\n;|]/.test(id)){
+    obj={};
+    id.split(/[\n;|]+/).forEach(part=>{const m=part.match(/^\s*([^:=]+)\s*[:=]\s*(.*?)\s*$/);if(m)obj[m[1].trim()]=m[2].trim();});
+    if(!Object.keys(obj).length)obj=null;
+  }
+  if(!obj)return {project:'',order:'',flat:'',windowId:id,type:'Other',size:'',qrRaw:id};
+  const pick=(...keys)=>{for(const key of keys){const found=Object.keys(obj).find(k=>k.toLowerCase()===key.toLowerCase());if(found&&obj[found]!==undefined&&obj[found]!==null)return String(obj[found]);}return '';};
+  const width=pick('width','windowWidth','w'),height=pick('height','windowHeight','h');
+  return {
+    project:pick('project','projectName','site'),
+    order:pick('order','orderNo','orderNumber','salesOrder'),
+    flat:pick('flat','towerFlat','flatNo','apartment'),
+    windowId:pick('windowId','id','code','windowCode','qrId')||id,
+    type:pick('type','windowType','productType')||'Other',
+    size:pick('size','dimensions','windowSize')||((width&&height)?width+' × '+height:''),
+    qrRaw:id
+  };
+}
+function findWindow(id){
+  id=String(id??'').trim();lastQrRaw=id;
+  let found=sampleWindows[id]||records.find(r=>r.windowId===id);
+  if(!found){found=normalizeQr(id);}
+  selectedWindow=found;
+  $('lookupResult').innerHTML='<div class="record"><strong>'+esc(found.windowId||'(QR scanned)')+'</strong><div>Project: '+esc(found.project||'Not included in QR')+' · Order: '+esc(found.order||'Not included in QR')+'</div><div>Flat: '+esc(found.flat||'Not included in QR')+' · Type: '+esc(found.type||'Not included in QR')+' · Size: '+esc(found.size||'Not included in QR')+'</div><div class="muted"><strong>Full QR data:</strong><br>'+esc(found.qrRaw||id)+'</div></div>';
+  $('useWindow').disabled=false;
+}
+$('lookup').addEventListener('click',()=>findWindow($('qrText').value));document.querySelectorAll('.sample').forEach(b=>b.addEventListener('click',()=>{$('qrText').value=b.dataset.id;findWindow(b.dataset.id)}));$('useWindow').addEventListener('click',()=>{if(!selectedWindow)return;['project','order','flat','windowId','type','size'].forEach(k=>$(k).value=selectedWindow[k]||'');$('qrDetails').value=selectedWindow.qrRaw||lastQrRaw||'';show('inspection')});
+$('status').addEventListener('change',()=>$('issueFields').classList.toggle('hidden',$('status').value!=='Non-FTR'));$('resetForm').addEventListener('click',()=>{$('form').reset();$('date').value=today();$('issueFields').classList.add('hidden');$('formMsg').textContent='Form cleared.'});
+$('form').addEventListener('submit',e=>{e.preventDefault();const r={};['project','order','flat','windowId','type','size','date','engineer','status','issue','responsibility','description','rootCause','action','remarks','qrDetails'].forEach(k=>r[k]=$(k).value.trim());r.qrRaw=r.qrDetails||lastQrRaw||'';r.photoCount=$('photos').files.length;r.createdAt=new Date().toISOString();records.push(r);persist();render();$('formMsg').textContent='Saved on this device. Export CSV regularly to keep a backup.';$('form').reset();$('date').value=today();$('issueFields').classList.add('hidden');show('dashboard')});
+
+function downloadExcel(){
+  if(!records.length){alert('No records to export yet.');return false;}
+  const preferred=['createdAt','date','project','order','flat','windowId','type','size','qrDetails','qrRaw','engineer','status','issue','responsibility','description','rootCause','action','remarks','photoCount'];
+  const keys=[...preferred.filter(k=>records.some(r=>Object.prototype.hasOwnProperty.call(r,k))),...new Set(records.flatMap(r=>Object.keys(r)).filter(k=>!preferred.includes(k)))];
+  const table='<table border="1"><thead><tr>'+keys.map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>'+records.map(r=>'<tr>'+keys.map(k=>'<td>'+esc(r[k]??'')+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+  const workbook='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>FTR Records</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body><h2>Windows FTR Records</h2>'+table+'<script>if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./service-worker.js").catch(()=>{});</script></body></html>';
+  const blob=new Blob(['\ufeff',workbook],{type:'application/vnd.ms-excel;charset=utf-8'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Windows_FTR_Records.xls';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);return true;
+}
+$('exportExcel').addEventListener('click',downloadExcel);
+$('emailExcel').addEventListener('click',()=>{
+  const to=$('emailTo').value.trim();
+  if(!to){alert('Please enter the recipient email address.');$('emailTo').focus();return;}
+  if(!records.length){alert('No records to export yet.');return;}
+  if(!downloadExcel())return;
+  const subject=encodeURIComponent('Windows FTR Records');
+  const body=encodeURIComponent('Dear Team,\\n\\nPlease find the attached Windows FTR Records Excel file.\\n\\nNote: Please attach the downloaded file Windows_FTR_Records.xls before sending this email.\\n\\nRegards');
+  setTimeout(()=>{window.location.href='mailto:'+encodeURIComponent(to)+'?subject='+subject+'&body='+body;},400);
+});
+
+$('export').addEventListener('click',()=>{if(!records.length){alert('No records to export yet.');return}const keys=[...new Set(records.flatMap(r=>Object.keys(r)))];const csv=[keys.map(csvCell).join(','),...records.map(r=>keys.map(k=>csvCell(r[k]??'')).join(','))].join('\r\n');const url=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='Windows_FTR_Records.csv';a.click();URL.revokeObjectURL(url)});function csvCell(v){return '"'+String(v).replace(/"/g,'""')+'"'}
+$('clearRecords').addEventListener('click',()=>{if(confirm('Delete every saved FTR record from this browser? Export a CSV first if needed.')){records=[];persist();render();}});
+async function stopCamera(){if(scanTimer)cancelAnimationFrame(scanTimer);scanTimer=null;if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;$('video').srcObject=null;$('video').classList.add('hidden')}
+$('stopCamera').addEventListener('click',stopCamera);$('startCamera').addEventListener('click',async()=>{if(!('BarcodeDetector'in window)){ $('cameraMsg').textContent='This browser does not support built-in QR scanning. Use manual QR text or try Chrome on Android.';return}try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});const v=$('video');v.srcObject=stream;v.classList.remove('hidden');await v.play();const detector=new BarcodeDetector({formats:['qr_code']});$('cameraMsg').textContent='Camera active. Hold a window QR code in view.';const tick=async()=>{if(!stream)return;try{const codes=await detector.detect(v);if(codes.length){$('qrText').value=codes[0].rawValue;findWindow(codes[0].rawValue);$('cameraMsg').textContent='QR captured. Check the window details below.';await stopCamera();return}}catch(e){}scanTimer=requestAnimationFrame(tick)};tick()}catch(e){$('cameraMsg').textContent='Camera could not start. Allow camera permission and open this app in a supported browser; otherwise enter the QR text manually.'}});
+render();
+})();
+</script><script>if("serviceWorker" in navigator && location.protocol.startsWith("http"))navigator.serviceWorker.register("./service-worker.js").catch(()=>{});</script></body></html>
